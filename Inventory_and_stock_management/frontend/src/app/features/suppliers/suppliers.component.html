@@ -1,0 +1,49 @@
+<div class="mx-auto flex h-full max-w-7xl flex-col gap-1.5 sm:gap-2 px-1 sm:px-3 py-1">
+  <div class="flex items-center justify-between gap-2">
+    <div>
+      <h1 class="text-base sm:text-xl font-semibold text-slate-900">Suppliers</h1>
+    </div>
+
+    <a
+      *ngIf="canCreateType()"
+      routerLink="/suppliers/add"
+      class="inline-flex shrink-0 items-center justify-center rounded-lg bg-violet-600 px-2.5 py-1 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+    >
+      + Add Supplier
+    </a>
+  </div>
+
+  <div class="flex">
+    <article class="group relative flex items-center justify-between gap-4 rounded-xl border-t-4 border-violet-500 bg-white p-3 sm:p-4 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5 min-w-[160px] sm:min-w-[210px]">
+      <div class="min-w-0 flex-1">
+        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">Total Suppliers</p>
+        <p class="mt-0.5 sm:mt-1.5 text-base sm:text-xl xl:text-2xl font-bold leading-tight text-slate-900 group-hover:text-violet-600 transition-colors duration-200">{{ total | number }}</p>
+        <p class="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">Active vendors</p>
+      </div>
+      <div class="hidden sm:flex h-9 w-9 xl:h-10 xl:w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 ring-1 ring-violet-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 xl:h-5 xl:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 17h4V5H2v12h3"/>
+          <path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h2"/>
+          <circle cx="7.5" cy="17.5" r="2.5"/>
+          <circle cx="17.5" cy="17.5" r="2.5"/>
+        </svg>
+      </div>
+    </article>
+  </div>
+
+  <section class="mt-0.5 flex min-h-0 flex-1">
+    <app-suppliers-list
+      class="block h-full w-full"
+      [suppliers]="suppliers"
+      [allSuppliers]="allSuppliers"
+      [myTasks]="myTasks"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [total]="total"
+      [totalPages]="totalPages"
+      (pageChange)="goToPage($event)"
+    ></app-suppliers-list>
+  </section>
+</div>
+
+

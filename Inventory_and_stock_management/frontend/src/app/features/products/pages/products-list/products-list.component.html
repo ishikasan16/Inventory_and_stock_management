@@ -1,0 +1,374 @@
+<section class="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+  <!-- Header -->
+  <div class="border-b border-slate-200 px-3 py-1.5 sm:px-4 sm:py-2">
+    <div class="flex flex-col gap-1.5 sm:gap-2 md:flex-row md:items-center md:justify-between">
+
+      <h2 class="text-sm sm:text-base font-semibold text-slate-900">
+        Product List
+      </h2>
+
+      <!-- Search and Status in ONE LINE on small screen -->
+      <div class="flex items-center gap-2">
+
+        <!-- Search -->
+        <label class="relative block min-w-0 flex-1 sm:w-60 sm:flex-initial">
+
+          <span class="sr-only">
+            Search products
+          </span>
+
+          <input #searchInput type="search" placeholder="Search products" [value]="searchQuery"
+            (input)="onSearchInput(searchInput.value)" (keydown)="onSearchKeydown($event)"
+            class="w-full rounded-xl border border-slate-300 bg-slate-50 py-1 sm:py-1.5 pl-8 sm:pl-9 pr-3 text-xs sm:text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200" />
+
+          <svg class="pointer-events-none absolute left-2.5 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-slate-400"
+            viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd"
+              d="M9 3.5a5.5 5.5 0 104.39 9.39l2.96 2.96a1 1 0 101.41-1.41l-2.96-2.96A5.5 5.5 0 009 3.5zm0 2a3.5 3.5 0 110 7 3.5 3.5 0 010-7z"
+              clip-rule="evenodd" />
+          </svg>
+
+          <!-- Suggestions -->
+          <div *ngIf="showSuggestions && suggestions.length > 0"
+            class="absolute left-0 right-0 z-30 mt-1.5 max-h-60 sm:max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+
+            <button type="button" *ngFor="let suggestion of suggestions; let i = index"
+              (mousedown)="selectSuggestion(suggestion)" [class]="
+            i === selectedSuggestionIndex
+              ? 'flex w-full items-center justify-between gap-2 bg-blue-50 px-3 py-1.5 text-left text-xs sm:text-sm text-slate-900'
+              : 'flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-xs sm:text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-150'
+          ">
+              <span class="min-w-0 flex-1 truncate font-medium">{{ suggestion.name }}</span>
+
+              <span class="shrink-0 text-[10px] sm:text-xs text-slate-400">
+                {{ suggestion.sku }}
+              </span>
+            </button>
+
+          </div>
+
+        </label>
+
+        <!-- Status Filter -->
+        <select #statusSelect [value]="selectedStatus" (change)="onStatusChange(statusSelect.value)"
+          aria-label="Filter by status"
+          class="shrink-0 rounded-xl border border-slate-300 bg-slate-50 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200">
+
+          <option>All Status</option>
+          <option>In Stock</option>
+          <option>Low Stock</option>
+          <option>Out of Stock</option>
+
+        </select>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile Card View -->
+  <div class="min-h-0 flex-1 overflow-y-auto md:hidden scrollbar-thin">
+
+    <div *ngIf="filteredProducts.length === 0" class="px-4 py-12 text-center text-sm text-slate-400">
+      No products found
+    </div>
+
+    <div class="divide-y divide-slate-100 p-2.5 sm:p-3 space-y-1">
+      <div *ngFor="let product of filteredProducts"
+        class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300"
+        [class.border-blue-400]="product.id === targetId"
+        [class.bg-blue-50]="product.id === targetId">
+
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5">
+              <p class="truncate font-medium text-slate-900 text-sm">{{ product.name }}</p>
+              <span *ngIf="product.id === targetId" class="shrink-0 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">Assigned Task</span>
+            </div>
+            <p class="mt-0.5 text-xs text-slate-500">{{ product.sku }}</p>
+          </div>
+          <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium" [ngClass]="{
+            'bg-green-100 text-green-700': getStatusLabel(product.stock_status) === 'In Stock',
+            'bg-amber-100 text-amber-700': getStatusLabel(product.stock_status) === 'Low Stock',
+            'bg-red-100 text-red-700': getStatusLabel(product.stock_status) === 'Out of Stock'
+          }">
+            {{ getStatusLabel(product.stock_status) }}
+          </span>
+        </div>
+
+        <div class="mt-2.5 grid grid-cols-2 gap-2 text-xs sm:text-sm">
+          <div>
+            <p class="text-[11px] text-slate-400">Category</p>
+            <p class="font-medium text-slate-700 truncate">{{ getCategoryName(product) }}</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-400">Supplier</p>
+            <p class="font-medium text-slate-700 truncate">{{ getSupplierName(product) }}</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-400">Price</p>
+            <p class="font-medium text-slate-700">{{ formatPrice(product.unit_price) }}</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-400">Quantity</p>
+            <p class="font-medium text-slate-700">{{ product.quantity_in_stock }}</p>
+          </div>
+        </div>
+
+        <div *ngIf="canEditRecord(product)" class="mt-2.5 flex flex-wrap justify-end gap-1.5 border-t border-slate-100 pt-2.5">
+          <button type="button" (click)="openAdjust(product)"
+            class="rounded-lg px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50 transition-colors duration-150">
+            Adjust Stock
+          </button>
+          <a [routerLink]="['/products/edit', product.id]"
+            class="rounded-lg px-2 py-1 text-xs font-medium text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 transition-colors duration-150">
+            Edit
+          </a>
+          <button type="button" (click)="deleteProduct(product.id)"
+            class="rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop Table View -->
+  <div class="hidden min-h-0 flex-1 overflow-y-auto md:block">
+
+    <table class="min-w-full divide-y divide-slate-200 text-center">
+
+      <thead class="sticky top-0 z-10 bg-slate-50 text-xs sm:text-sm text-slate-600 shadow-sm">
+
+        <tr>
+          <th class="px-3 py-2 font-medium">Name</th>
+          <th class="px-3 py-2 font-medium">SKU</th>
+          <th class="px-3 py-2 font-medium">Category Name</th>
+          <th class="px-3 py-2 font-medium">Supplier Name</th>
+          <th class="px-3 py-2 font-medium">Price</th>
+          <th class="px-3 py-2 font-medium">Qty</th>
+          <th class="px-3 py-2 font-medium">Status</th>
+          <th *ngIf="showActions" class="px-3 py-2 font-medium">Actions</th>
+        </tr>
+
+      </thead>
+
+      <tbody class="divide-y divide-slate-200 bg-white text-xs sm:text-sm text-slate-700">
+
+        <tr *ngFor="let product of filteredProducts"
+          class="transition-colors duration-150 hover:bg-slate-50/80"
+          [class.bg-blue-50]="product.id === targetId">
+
+          <td class="px-3 py-2 font-medium text-slate-900">
+            <div class="flex items-center gap-1.5">
+              <span>{{ product.name }}</span>
+              <span *ngIf="product.id === targetId" class="inline-flex shrink-0 items-center rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-blue-200">Assigned Task</span>
+            </div>
+          </td>
+
+          <td class="px-3 py-2">
+            {{ product.sku }}
+          </td>
+
+          <td class="px-3 py-2">
+            {{ getCategoryName(product) }}
+          </td>
+
+          <td class="px-3 py-2">
+            {{ getSupplierName(product) }}
+          </td>
+
+          <td class="px-3 py-2">
+            {{ formatPrice(product.unit_price) }}
+          </td>
+
+          <td class="px-3 py-2">
+            {{ product.quantity_in_stock }}
+          </td>
+
+          <td class="px-3 py-2 whitespace-nowrap">
+            <span class="inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium" [ngClass]="{
+              'bg-green-100 text-green-700': getStatusLabel(product.stock_status) === 'In Stock',
+              'bg-amber-100 text-amber-700': getStatusLabel(product.stock_status) === 'Low Stock',
+              'bg-red-100 text-red-700': getStatusLabel(product.stock_status) === 'Out of Stock'
+            }">
+              {{ getStatusLabel(product.stock_status) }}
+            </span>
+          </td>
+
+          <td class="px-3 py-2">
+            <div *ngIf="canEditRecord(product)" class="flex items-center justify-center gap-1 sm:gap-1.5">
+              <button type="button" (click)="openAdjust(product)"
+                class="rounded-lg px-2 py-0.5 text-xs font-medium text-sky-700 hover:bg-sky-50 transition-colors duration-150">
+                Adjust Stock
+              </button>
+              <a [routerLink]="['/products/edit', product.id]"
+                class="rounded-lg px-2 py-0.5 text-center text-xs font-medium text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 transition-colors duration-150">
+                Edit
+              </a>
+              <button type="button" (click)="deleteProduct(product.id)"
+                class="rounded-lg px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150">
+                Delete
+              </button>
+            </div>
+          </td>
+
+        </tr>
+
+        <tr *ngIf="filteredProducts.length === 0">
+          <td colspan="8" class="px-4 py-12 text-center text-sm text-slate-400">
+            No products found
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t border-slate-200 px-3 py-1.5 sm:px-4 sm:py-1.5">
+    <div class="flex items-center justify-between gap-2">
+
+      <div class="text-xs text-slate-500">
+
+        <ng-container *ngIf="filteredTotal > 0">
+          Showing
+          <span class="font-medium text-slate-600">
+            {{ startItem }}
+          </span>
+          –
+          <span class="font-medium text-slate-600">
+            {{ endItem }}
+          </span>
+          of
+        </ng-container>
+
+        <span class="font-medium text-slate-600">
+          {{ filteredTotal }}
+        </span>
+        products
+        <span *ngIf="isFiltering" class="text-slate-400">(filtered)</span>
+
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2">
+
+        <button
+          type="button"
+          (click)="goToPage(activePage - 1)"
+          [disabled]="activePage <= 1 || filteredTotal === 0"
+          class="rounded-lg border border-slate-300 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Previous
+        </button>
+
+        <span class="px-1 text-xs text-slate-500">
+          Page
+          <span class="font-medium text-slate-600">
+            {{ activePage }}
+          </span>
+          of
+          <span class="font-medium text-slate-600">
+            {{ filteredTotalPages }}
+          </span>
+        </span>
+
+        <button
+          type="button"
+          (click)="goToPage(activePage + 1)"
+          [disabled]="activePage >= filteredTotalPages || filteredTotal === 0"
+          class="rounded-lg border border-slate-300 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Stock Adjustment Modal -->
+  <div *ngIf="adjustProduct !== null" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-3 sm:p-4 backdrop-blur-sm">
+    <div class="flex max-h-[92vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl" role="dialog" aria-modal="true" aria-label="Adjust Stock">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6 sm:py-4">
+        <h2 class="text-base sm:text-lg font-semibold text-slate-900">Adjust Stock</h2>
+        <button type="button" (click)="closeAdjust()" class="rounded-lg p-1 text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3.5 sm:px-6 sm:py-5">
+        <p *ngIf="adjustProduct" class="text-xs sm:text-sm text-slate-500">
+          {{ adjustProduct.name }} · {{ adjustProduct.sku }} · Current Qty: {{ adjustProduct.quantity_in_stock }}
+        </p>
+
+        <div class="mt-3 sm:mt-4 grid grid-cols-2 gap-2 sm:gap-3">
+          <button type="button" (click)="onOperationChange('IN')"
+            [class]="adjustOperation === 'IN' ? 'rounded-lg sm:rounded-xl border border-blue-500 bg-blue-50 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-blue-700' : 'rounded-lg sm:rounded-xl border border-slate-300 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150'">
+            Add (+) Stock
+          </button>
+          <button type="button" (click)="onOperationChange('OUT')"
+            [class]="adjustOperation === 'OUT' ? 'rounded-lg sm:rounded-xl border border-rose-500 bg-rose-50 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-rose-700' : 'rounded-lg sm:rounded-xl border border-slate-300 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150'">
+            Deduct (−) Stock
+          </button>
+        </div>
+
+        <form [formGroup]="adjustForm" (ngSubmit)="submitAdjust()" class="mt-3.5 sm:mt-4 space-y-3 sm:space-y-4">
+          <input type="hidden" formControlName="operation" />
+
+          <div>
+            <label class="mb-1 block text-xs sm:text-sm font-medium text-slate-700" for="adjust-qty">
+              Quantity
+            </label>
+            <input id="adjust-qty" type="number" formControlName="quantity" min="1"
+              class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200" />
+            <p *ngIf="adjustForm.get('quantity')?.invalid && adjustForm.get('quantity')?.touched" class="mt-1 text-xs text-rose-600">
+              Enter a quantity of at least 1.
+            </p>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-xs sm:text-sm font-medium text-slate-700" for="adjust-reason">
+              Reason
+            </label>
+            <textarea id="adjust-reason" rows="2" formControlName="reason"
+              placeholder="e.g. Damaged during audit, New supplier delivery"
+              class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"></textarea>
+            <p *ngIf="adjustForm.get('reason')?.invalid && adjustForm.get('reason')?.touched" class="mt-1 text-xs text-rose-600">
+              Provide a reason for this adjustment.
+            </p>
+          </div>
+
+          <p class="text-[11px] sm:text-xs text-slate-400">
+            This will be recorded with the reason and your account for audit purposes.
+          </p>
+        </form>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 sm:gap-3 border-t border-slate-200 px-4 py-3 sm:px-6 sm:py-4">
+        <button type="button" (click)="closeAdjust()"
+          class="rounded-lg sm:rounded-xl border border-slate-300 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors duration-150">
+          Cancel
+        </button>
+        <button type="button" (click)="submitAdjust()" [disabled]="isAdjusting"
+          class="rounded-lg sm:rounded-xl bg-blue-600 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40">
+          {{ isAdjusting ? 'Saving…' : (adjustOperation === 'IN' ? 'Add Stock' : 'Deduct Stock') }}
+        </button>
+      </div>
+    </div>
+  </div>
+<!-- Toast Notification -->
+  <div *ngIf="toastMessage"
+    class="pointer-events-auto fixed bottom-4 right-4 z-[100] w-80 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur"
+    [class]="toastType === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          : toastType === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800'
+          : 'border-blue-200 bg-blue-50 text-blue-800'"
+    [attr.role]="toastType === 'error' ? 'alert' : 'status'">
+    {{ toastMessage }}
+  </div>
+</section>

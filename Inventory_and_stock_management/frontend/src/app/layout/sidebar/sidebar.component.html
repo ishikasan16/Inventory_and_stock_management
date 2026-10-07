@@ -1,0 +1,138 @@
+<div class="relative flex h-full w-full min-h-0">
+  <div *ngIf="isOpen" class="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm transition-opacity duration-300 md:hidden" (click)="closeSidebar()" aria-hidden="true">
+  </div>
+
+  <aside [class.-translate-x-full]="!isOpen" [class.translate-x-0]="isOpen"
+    class="fixed inset-y-0 left-0 z-50 flex h-screen w-72 shrink-0 -translate-x-full flex-col bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-3 text-slate-300 transition-all duration-300 ease-in-out md:static md:inset-auto md:z-auto md:h-full md:w-64 md:translate-x-0 md:transform-none md:shadow-none md:py-5">
+    <div class="border-b border-slate-800/60 px-3 pb-3 md:pb-4">
+      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Inventory</p>
+      <h2 class="mt-1.5 text-lg font-semibold leading-6 text-white md:text-xl">Stock Management</h2>
+    </div>
+
+    <nav class="mt-4 min-h-0 flex-1 overflow-y-auto overflow-x-hidden scrollbar-hidden md:mt-6" aria-label="Sidebar navigation">
+
+      <p class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Overview</p>
+      <div class="mt-2 space-y-1">
+        <a routerLink="/dashboard" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">⌂</span>
+          Dashboard
+        </a>
+      </div>
+
+      <ng-container *ngIf="canViewInventorySection">
+      <button type="button" (click)="toggleSection('inventory')"
+        class="mt-3 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 transition-colors duration-150 hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 md:mt-5">
+        <span>Inventory</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition-transform duration-200" [class.rotate-180]="openSections['inventory']" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <div *ngIf="openSections['inventory']" class="mt-2 space-y-1">
+        <a *ngIf="canViewProducts" routerLink="/products" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">▦</span>
+          Products
+        </a>
+
+        <a *ngIf="canViewCategories" routerLink="/categories" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">◈</span>
+          Categories
+        </a>
+
+        <a *ngIf="canViewSuppliers" routerLink="/suppliers" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">♧</span>
+          Suppliers
+        </a>
+      </div>
+      </ng-container>
+
+      <ng-container *ngIf="canViewSalesSection">
+      <button type="button" (click)="toggleSection('sales')"
+        class="mt-3 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 transition-colors duration-150 hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 md:mt-5">
+        <span>Sales &amp; Orders</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition-transform duration-200" [class.rotate-180]="openSections['sales']" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <div *ngIf="openSections['sales']" class="mt-2 space-y-1">
+        <a *ngIf="canViewOrders" routerLink="/orders" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">☰</span>
+          Orders
+        </a>
+
+        <a *ngIf="canViewCustomers" routerLink="/customers" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">☺</span>
+          Customers
+        </a>
+      </div>
+      </ng-container>
+
+      <ng-container *ngIf="canViewAiSection">
+      <button type="button" (click)="toggleSection('ai')"
+        class="mt-3 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 transition-colors duration-150 hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 md:mt-5">
+        <span>Operations &amp; AI</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition-transform duration-200" [class.rotate-180]="openSections['ai']" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <div *ngIf="openSections['ai']" class="mt-2 space-y-1">
+        <a *ngIf="canViewPredictions" routerLink="/predictions" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">✦</span>
+          AI Delivery ETA
+        </a>
+      </div>
+      </ng-container>
+
+      <ng-container *ngIf="canViewManagementSection">
+      <button type="button" (click)="toggleSection('management')"
+        class="mt-3 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 transition-colors duration-150 hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-400 md:mt-5">
+        <span>Management</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transition-transform duration-200" [class.rotate-180]="openSections['management']" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <div *ngIf="openSections['management']" class="mt-2 space-y-1">
+        <a *ngIf="canViewMyTasks" routerLink="/tasks" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">☑</span>
+          My Tasks
+        </a>
+
+        <a *ngIf="canManageTaskDelegation" routerLink="/tasks/manage" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">✎</span>
+          Manage Tasks
+        </a>
+
+        <a *ngIf="canViewUsers" routerLink="/admin/users" routerLinkActive="bg-blue-600/90 text-white shadow-lg shadow-blue-500/20"
+          (click)="closeSidebar()"
+          class="group flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-all duration-200 hover:bg-slate-800/80 hover:text-white hover:shadow-md hover:shadow-slate-950/30 focus:outline-none focus:ring-2 focus:ring-blue-400 md:py-2">
+          <span class="mr-3 w-5 text-center text-sm transition-transform duration-200 group-hover:scale-110 md:text-base" aria-hidden="true">⚙</span>
+          User Management
+        </a>
+      </div>
+      </ng-container>
+    </nav>
+
+    <button type="button" (click)="logout()"
+      class="flex w-full items-center rounded-lg px-3 py-1.5 text-[15px] font-medium text-slate-400 transition-all duration-200 hover:bg-red-500/10 hover:text-red-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-400 md:py-2">
+      <span class="mr-3 w-5 text-center text-sm md:text-base" aria-hidden="true">↪</span>
+      Sign out
+    </button>
+  </aside>
+</div>

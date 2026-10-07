@@ -1,0 +1,228 @@
+<div class="mx-auto max-w-7xl p-1 sm:p-3">
+
+  <p *ngIf="isLoading" class="mt-2 sm:mt-3 text-sm text-slate-500" role="status">Loading dashboard...</p>
+  <p *ngIf="errorMessage" class="mt-2 sm:mt-3 text-sm text-rose-600" role="alert">{{ errorMessage }}</p>
+
+  <section class="mt-3 sm:mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3.5" aria-label="Inventory summary">
+    <article class="group relative flex items-center justify-between rounded-xl border-t-4 border-sky-500 bg-white p-3 sm:p-4 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5">
+      <div class="min-w-0 flex-1">
+        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">Total Products</p>
+        <p class="mt-0.5 sm:mt-1.5 text-base sm:text-xl xl:text-2xl font-bold leading-tight text-slate-900 transition-colors duration-200 group-hover:text-sky-600">{{ summary?.total_products | number }}</p>
+        <p class="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">Active SKUs</p>
+      </div>
+      <div class="hidden sm:flex h-9 w-9 xl:h-10 xl:w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 xl:h-5 xl:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m7.5 4.27 9 5.15"/>
+          <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+          <path d="m3.3 7 8.7 5 8.7-5"/>
+          <path d="M12 22V12"/>
+        </svg>
+      </div>
+    </article>
+
+    <article class="group relative flex items-center justify-between rounded-xl border-t-4 border-emerald-500 bg-white p-3 sm:p-4 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5">
+      <div class="min-w-0 flex-1">
+        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">Valuation</p>
+        <p class="mt-0.5 sm:mt-1.5 text-base sm:text-xl xl:text-2xl font-bold leading-tight text-slate-900 transition-colors duration-200 group-hover:text-emerald-600 truncate">{{ stockValueInr() }}</p>
+        <p class="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">Total stock worth</p>
+      </div>
+      <div class="hidden sm:flex h-9 w-9 xl:h-10 xl:w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 xl:h-5 xl:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h12"/>
+          <path d="M6 8h12"/>
+          <path d="m6 13 8.5 8"/>
+          <path d="M6 13h3a4 4 0 0 0 0-8"/>
+        </svg>
+      </div>
+    </article>
+
+    <article class="group relative flex items-center justify-between rounded-xl border-t-4 border-amber-500 bg-white p-3 sm:p-4 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5">
+      <div class="min-w-0 flex-1">
+        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">Low Stock</p>
+        <p class="mt-0.5 sm:mt-1.5 text-base sm:text-xl xl:text-2xl font-bold leading-tight text-slate-900 transition-colors duration-200 group-hover:text-amber-600">{{ summary?.low_stock_count | number }}</p>
+        <p class="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">Below reorder</p>
+      </div>
+      <div class="hidden sm:flex h-9 w-9 xl:h-10 xl:w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 xl:h-5 xl:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+    </article>
+
+    <article class="group relative flex items-center justify-between rounded-xl border-t-4 border-rose-500 bg-white p-3 sm:p-4 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5">
+      <div class="min-w-0 flex-1">
+        <p class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">Out of Stock</p>
+        <p class="mt-0.5 sm:mt-1.5 text-base sm:text-xl xl:text-2xl font-bold leading-tight text-slate-900 transition-colors duration-200 group-hover:text-rose-600">{{ summary?.out_of_stock_count | number }}</p>
+        <p class="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 truncate">Zero quantity</p>
+      </div>
+      <div class="hidden sm:flex h-9 w-9 xl:h-10 xl:w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 xl:h-5 xl:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+        </svg>
+      </div>
+    </article>
+  </section>
+
+  <section class="mt-4 sm:mt-6 grid grid-cols-1 items-stretch gap-3 sm:gap-4 lg:grid-cols-2" aria-label="Dashboard widgets">
+
+    <!-- Stock Alerts -->
+    <article *ngIf="canViewStockAlerts" aria-label="Stock alerts"
+      class="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-3 sm:p-5 shadow-sm lg:col-start-1"
+      [ngClass]="canViewTasksSection ? 'lg:row-span-2 lg:row-start-1' : ''">
+      <div class="flex shrink-0 items-center justify-between gap-2">
+        <h2 class="text-sm sm:text-base font-semibold text-slate-900">Stock Alerts</h2>
+        <div class="flex items-center gap-2">
+          <select
+            [value]="stockAlertsTab"
+            (change)="onStockTabChange($any($event.target).value)"
+            class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] sm:text-xs font-medium text-slate-700 hover:bg-slate-100 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors cursor-pointer"
+            aria-label="Filter stock alerts"
+          >
+            <option value="all">Status</option>
+            <option value="out">Out of Stock</option>
+            <option value="low">Low Stock</option>
+          </select>
+          <a routerLink="/products" class="text-xs font-medium text-blue-600 hover:text-blue-500">View all</a>
+        </div>
+      </div>
+
+      <p *ngIf="stockAlertsLoading" class="py-8 text-center text-sm text-slate-400" role="status">Loading stock alerts...</p>
+      <p *ngIf="stockAlertsError" class="mt-3 text-sm text-rose-600" role="alert">{{ stockAlertsError }}</p>
+
+      <div *ngIf="!stockAlertsLoading && !stockAlertsError && activeStockProducts.length === 0" class="py-8 text-center text-sm text-slate-400">
+        {{ activeStockEmptyLabel }}
+      </div>
+
+      <div *ngIf="!stockAlertsLoading && !stockAlertsError && activeStockProducts.length > 0"
+        class="mt-2 overflow-y-auto sm:mt-3"
+        [ngClass]="canViewTasksSection ? 'flex-1 min-h-0 lg:max-h-none max-h-72' : 'max-h-72'">
+        <table class="w-full divide-y divide-slate-100 text-xs sm:text-sm">
+          <thead class="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[11px] sm:text-xs font-medium text-slate-500 sm:uppercase sm:tracking-wide shadow-sm">
+            <tr>
+              <th scope="col" class="px-2 py-2 text-left font-medium sm:px-3 sm:py-2.5">Product</th>
+              <th scope="col" class="px-2 py-2 text-right font-medium sm:px-3 sm:py-2.5">Qty</th>
+              <th scope="col" class="px-2 py-2 text-right font-medium sm:px-3 sm:py-2.5">Restock Qty</th>
+              <th scope="col" class="px-2 py-2 text-right font-medium sm:px-3 sm:py-2.5">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr *ngFor="let product of activeStockProducts" class="transition-colors duration-150 hover:bg-slate-50/80">
+              <td class="px-2 py-2 sm:px-3 sm:py-2 align-middle">
+                <p class="break-words font-medium leading-tight text-slate-900" [title]="product.name">{{ product.name }}</p>
+                <p class="mt-0.5 break-words text-[11px] sm:text-xs leading-4 text-slate-500" [title]="product.sku">{{ product.sku }}</p>
+              </td>
+              <td class="whitespace-nowrap px-2 py-2 sm:px-3 sm:py-2 text-right align-middle font-semibold tabular-nums text-slate-900">{{ product.quantity_in_stock | number }}</td>
+              <td class="whitespace-nowrap px-2 py-2 sm:px-3 sm:py-2 text-right align-middle tabular-nums text-slate-600">{{ product.reorder_level | number }}</td>
+              <td class="whitespace-nowrap px-2 py-2 sm:px-3 sm:py-2 text-right align-middle">
+                <span [ngClass]="stockStatusClass(product.stock_status)" class="inline-block whitespace-nowrap">{{ getStatusLabel(product.stock_status) }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p *ngIf="activeStockProducts.length > 0 && activeStockTotal > activeStockProducts.length" class="shrink-0 mt-3 text-xs text-slate-500">
+        Showing {{ activeStockProducts.length | number }} of {{ activeStockTotal | number }} products.
+      </p>
+    </article>
+
+    <!-- My Tasks in Column 1 when Stock Alerts is hidden (Order Staff) -->
+    <div *ngIf="!canViewStockAlerts && canViewTasksSection" class="flex flex-col lg:col-start-1">
+      <ng-container *ngTemplateOutlet="myTasksTemplate"></ng-container>
+    </div>
+
+    <div
+      class="flex flex-col gap-3 sm:gap-4"
+      [ngClass]="canViewStockAlerts ? 'lg:col-start-2 lg:row-span-2 lg:row-start-1' : 'lg:col-start-2'"
+    >
+
+      <!-- Recent Orders -->
+      <article *ngIf="canViewOrdersSection" class="flex-auto rounded-xl border border-slate-200 bg-white p-3 sm:p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm sm:text-base font-semibold text-slate-900">Recent Orders</h2>
+          <a routerLink="/orders" class="text-xs font-medium text-blue-600 hover:text-blue-500">View all</a>
+        </div>
+
+        <div *ngIf="orders.length === 0" class="py-8 text-center text-sm text-slate-400">
+          No recent orders.
+        </div>
+
+        <div *ngIf="orders.length > 0" class="mt-2 max-h-72 overflow-y-auto sm:mt-3">
+          <table class="w-full divide-y divide-slate-100 text-xs sm:text-sm">
+            <thead class="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[11px] sm:text-xs font-medium text-slate-500 sm:uppercase sm:tracking-wide shadow-sm">
+              <tr>
+                <th scope="col" class="px-1.5 py-2 text-left font-medium sm:px-3 sm:py-2.5">Order</th>
+                <th scope="col" class="px-1.5 py-2 text-left font-medium sm:px-3 sm:py-2.5">Status</th>
+                <th scope="col" class="px-1.5 py-2 text-right font-medium sm:px-3 sm:py-2.5">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr *ngFor="let order of orders" class="transition-colors duration-150 hover:bg-slate-50/80">
+                <td class="px-1.5 py-1.5 sm:px-3 sm:py-2 align-middle">
+                  <p class="font-medium leading-tight text-slate-900" [title]="'#' + order.id">
+                    #{{ order.id.length > 8 ? order.id.slice(0, 8) : order.id }}
+                  </p>
+                  <p class="mt-0.5 whitespace-nowrap text-[10px] leading-4 text-slate-500 sm:text-xs">{{ order.order_date | date:'short' }}</p>
+                </td>
+                <td class="px-1.5 py-1.5 sm:px-3 sm:py-2 align-middle">
+                  <div class="flex flex-col items-start gap-0.5 sm:gap-1">
+                    <span [ngClass]="statusClass(order.status)">{{ order.status }}</span>
+                    <span *ngIf="isDelivered(order)" class="whitespace-nowrap pl-1 text-[9px] font-medium leading-4 text-emerald-600 sm:pl-2 sm:text-xs">
+                      &#10003; {{ (order.actual_delivery_date | date:'mediumDate') || 'Delivered' }}
+                    </span>
+                  </div>
+                </td>
+                <td class="whitespace-nowrap px-1.5 py-1.5 sm:px-3 sm:py-2 text-right align-middle text-[11px] font-semibold tabular-nums text-slate-900 sm:text-sm">{{ totalInr(order) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <!-- My Tasks in Column 2 only when Stock Alerts is present in Column 1 -->
+      <div *ngIf="canViewStockAlerts && canViewTasksSection" class="flex flex-auto flex-col">
+        <ng-container *ngTemplateOutlet="myTasksTemplate"></ng-container>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- My Tasks Reusable Template -->
+  <ng-template #myTasksTemplate>
+    <article class="flex h-full flex-auto flex-col rounded-xl border border-slate-200 bg-white p-3 sm:p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm sm:text-base font-semibold text-slate-900">My Tasks</h2>
+        <a routerLink="/tasks" class="text-xs font-medium text-blue-600 hover:text-blue-500">View all</a>
+      </div>
+
+      <div *ngIf="tasks.length === 0" class="flex flex-1 items-center justify-center py-8 text-center text-sm text-slate-400">
+        No active assignments.
+      </div>
+
+      <ul *ngIf="tasks.length > 0" class="mt-2 divide-y divide-slate-100 sm:mt-3">
+        <li *ngFor="let task of tasks" class="flex items-center justify-between gap-2.5 py-2 sm:py-2.5 sm:gap-3">
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-xs sm:text-sm font-medium text-slate-900">{{ task.title }}</p>
+            <p class="mt-0.5 text-[10px] sm:text-xs text-slate-500">
+              {{ task.status }} · {{ task.priority }}
+              <span *ngIf="task.due_date" class="text-slate-400"> · Due {{ task.due_date | date:'mediumDate' }}</span>
+            </p>
+          </div>
+          <a
+            *ngIf="getTaskRoute(task)"
+            [routerLink]="getTaskRoute(task)"
+            [queryParams]="getTaskQueryParams(task)"
+            class="shrink-0 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] sm:text-xs font-semibold text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+            [title]="getTaskScopeLabel(task)"
+          >
+            {{ getTaskScopeLabel(task) }} &rarr;
+          </a>
+        </li>
+      </ul>
+    </article>
+  </ng-template>
+
+</div>

@@ -1,0 +1,470 @@
+<div class="mx-auto flex h-full max-w-7xl flex-col gap-1.5 sm:gap-2 px-1 sm:px-3 py-1">
+  <div class="flex items-center justify-between gap-2">
+    <div>
+      <h1 class="text-base sm:text-xl font-semibold text-slate-900">Orders</h1>
+      <p class="text-xs text-slate-500 hidden sm:block">Sales orders, fulfilment status, and AI
+        delivery estimates</p>
+    </div>
+
+    <button *ngIf="canCreateOrder()" type="button" (click)="openCreate()"
+      class="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-2.5 py-1 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+      + New Order
+    </button>
+  </div>
+
+  <p *ngIf="errorMessage" class="rounded-xl bg-rose-50 px-3 py-2 text-xs sm:text-sm text-rose-600 ring-1 ring-rose-200"
+    role="alert">
+    {{ errorMessage }}
+  </p>
+
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 px-3 py-1.5 sm:px-4 sm:py-2">
+      <h2 class="text-sm sm:text-base font-semibold text-slate-900">Order List</h2>
+    </div>
+
+    <div *ngIf="isFiltering"
+      class="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 bg-blue-50/80 px-4 py-2.5 text-xs sm:text-sm text-blue-900">
+      <span class="flex items-center gap-1.5 sm:gap-2">
+        <span>Filtered orders matching: <span class="font-semibold text-blue-700">"{{ searchQuery }}"</span></span>
+        <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] sm:text-xs font-semibold text-blue-700">
+          {{ filteredTotal }} found
+        </span>
+      </span>
+      <button type="button" (click)="clearSearch()"
+        class="rounded-md px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors">
+        Clear filter
+      </button>
+    </div>
+
+    <div *ngIf="isLoading" class="px-6 py-16 text-center text-sm text-slate-400">
+      Loading orders…
+    </div>
+
+    <!-- Mobile Card View -->
+    <div *ngIf="!isLoading && displayedOrders.length > 0"
+      class="min-h-0 flex-1 overflow-y-auto md:hidden scrollbar-thin p-3 space-y-3">
+      <div *ngFor="let order of displayedOrders"
+        class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300"
+        [class.border-blue-400]="order.id === targetId"
+        [class.bg-blue-50]="order.id === targetId">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-xs font-semibold text-blue-600">#{{ shortId(order.id) }}</span>
+              <span *ngIf="order.id === targetId" class="shrink-0 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">Assigned Task</span>
+            </div>
+            <p class="truncate font-semibold text-slate-900 text-sm mt-0.5">{{ customerName(order.customer_id) }}</p>
+          </div>
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <span [ngClass]="statusClass(order.status)">{{ order.status }}</span>
+            <span *ngIf="isDelivered(order)" class="text-[10px] font-medium text-emerald-600">
+              &#10003; {{ (order.actual_delivery_date | date:'mediumDate') || 'Delivered' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs text-slate-500">
+          <div>
+            <span class="text-slate-400">Date:</span>
+            <span class="ml-1 text-slate-700 font-medium">{{ order.order_date | date:'mediumDate' }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400">Total:</span>
+            <span class="ml-1 text-slate-900 font-bold text-sm">{{ totalInr(order) }}</span>
+          </div>
+        </div>
+
+        <div class="mt-3 flex items-center justify-end gap-1.5 border-t border-slate-100 pt-2.5">
+          <button type="button" (click)="openDetails(order)"
+            class="rounded-lg px-2 py-1 text-center text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">
+            Details
+          </button>
+          <button *ngIf="canUpdateOrder(order)" type="button" (click)="openStatus(order)"
+            class="rounded-lg px-2 py-1 text-center text-xs font-medium text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors duration-150">
+            Update Status
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div *ngIf="!isLoading && displayedOrders.length > 0"
+      class="hidden min-h-0 flex-1 overflow-y-auto md:block">
+      <table class="min-w-full divide-y divide-slate-200 text-center">
+        <thead class="sticky top-0 z-10 bg-slate-50 text-xs sm:text-sm text-slate-600 shadow-sm">
+          <tr>
+            <th class="px-3 py-2 font-medium">Order ID</th>
+            <th class="px-3 py-2 font-medium">Date</th>
+            <th class="px-3 py-2 font-medium">Customer</th>
+            <th class="px-3 py-2 font-medium">Status</th>
+            <th class="px-3 py-2 font-medium">Total</th>
+            <th class="px-3 py-2 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white text-xs sm:text-sm text-slate-700">
+          <tr *ngFor="let order of displayedOrders"
+            class="transition-colors duration-150 hover:bg-slate-50/80"
+            [class.bg-blue-50]="order.id === targetId">
+            <td class="px-3 py-2 font-mono text-xs font-medium text-slate-500">
+              <div class="flex items-center justify-center gap-1.5">
+                <span>{{ shortId(order.id) }}</span>
+                <span *ngIf="order.id === targetId" class="inline-flex shrink-0 items-center rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-blue-200 font-sans">Assigned Task</span>
+              </div>
+            </td>
+            <td class="px-3 py-2">{{ order.order_date | date:'mediumDate' }}</td>
+            <td class="px-3 py-2 font-medium text-slate-900">{{ customerName(order.customer_id) }}</td>
+            <td class="px-3 py-2">
+              <div class="flex flex-col items-center gap-0.5">
+                <span [ngClass]="statusClass(order.status)" class="inline-block whitespace-nowrap">{{ order.status }}</span>
+                <span *ngIf="isDelivered(order)" class="text-[11px] font-medium text-emerald-600 whitespace-nowrap">
+                  &#10003; {{ (order.actual_delivery_date | date:'mediumDate') || 'Delivered' }}
+                </span>
+              </div>
+            </td>
+            <td class="px-3 py-2 font-semibold text-slate-900">{{ totalInr(order) }}</td>
+            <td class="px-3 py-2">
+              <div [class]="canUpdateOrder(order) ? 'flex items-center justify-center gap-1.5' : 'flex items-center justify-end pr-3 sm:pr-4'">
+                <button type="button" (click)="openDetails(order)"
+                  class="rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 text-center text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors duration-150">
+                  Details
+                </button>
+                <button *ngIf="canUpdateOrder(order)" type="button" (click)="openStatus(order)"
+                  class="rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 text-center text-xs font-medium text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors duration-150">
+                  Update Status
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!isLoading && displayedOrders.length === 0 && !errorMessage"
+      class="px-6 py-16 text-center text-sm text-slate-400">
+      {{ isFiltering ? 'No orders matching "' + searchQuery + '"' : 'No orders found.' }}
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && filteredTotal > 0" class="border-t border-slate-200 px-3 py-1.5 sm:px-4 sm:py-1.5">
+      <div class="flex items-center justify-between gap-2 text-xs">
+        <div class="text-xs text-slate-500">
+          Showing
+          <span class="font-medium text-slate-600">{{ startItem }}</span>
+          –
+          <span class="font-medium text-slate-600">{{ endItem }}</span>
+          of
+          <span class="font-medium text-slate-600">{{ filteredTotal }}</span>
+          orders
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button type="button" (click)="goToPage(activePage - 1)" [disabled]="activePage <= 1"
+            class="rounded-lg border border-slate-300 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
+            Previous
+          </button>
+
+          <span class="px-1 text-xs text-slate-500">
+            Page
+            <span class="font-medium text-slate-600">{{ activePage }}</span>
+            of
+            <span class="font-medium text-slate-600">{{ filteredTotalPages }}</span>
+          </span>
+
+          <button type="button" (click)="goToPage(activePage + 1)" [disabled]="activePage >= filteredTotalPages"
+            class="rounded-lg border border-slate-300 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- New Order Modal -->
+  <div *ngIf="showCreateModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div class="flex max-h-[90vh] w-full max-w-[680px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+      role="dialog" aria-modal="true" aria-label="New Order">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">New Order</h2>
+        <button type="button" (click)="showCreateModal = false"
+          class="rounded-lg p-1 text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+            aria-hidden="true">
+            <path fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div *ngIf="createFormLoadError"
+          class="mb-4 flex flex-col gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 sm:flex-row sm:items-center sm:justify-between"
+          role="alert">
+          <span>{{ createFormLoadError }} Retry before creating the order.</span>
+          <button type="button" (click)="retryCreateFormLoads()"
+            class="shrink-0 self-start rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors duration-150 hover:bg-amber-100 sm:self-auto">
+            Retry
+          </button>
+        </div>
+
+        <form [formGroup]="createForm" (ngSubmit)="createOrder()" class="space-y-4">
+          <div>
+            <label for="order-customer" class="block text-sm font-medium text-slate-700">Customer</label>
+            <select id="order-customer" formControlName="customer_id"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+              <option value="" disabled>Select a customer</option>
+              <option *ngFor="let customer of customers" [value]="customer.id">{{ customer.name }} ({{ customer.email
+                }})</option>
+            </select>
+            <p *ngIf="createForm.controls['customer_id'].touched && createForm.controls['customer_id'].invalid"
+              class="mt-1 text-xs text-rose-600">
+              Customer is required.
+            </p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-slate-700">Order Items</p>
+              <button type="button" (click)="addItem()"
+                class="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors duration-150">
+                + Add item
+              </button>
+            </div>
+
+            <div formArrayName="items" class="mt-2 space-y-3">
+              <div *ngFor="let item of items.controls; let i = index" [formGroupName]="i"
+                class="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-end sm:gap-3">
+                <div class="min-w-0 flex-1">
+                  <label class="block text-xs font-medium text-slate-500">Product</label>
+                  <select formControlName="product_id"
+                    class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+                    <option value="" disabled>Select product</option>
+                    <option *ngFor="let product of products" [value]="product.id">
+                      {{ product.name }} — [{{ product.quantity_in_stock }} in stock]
+                    </option>
+                  </select>
+                  <p *ngIf="isItemFieldInvalid(item, 'product_id')" class="mt-1 text-xs text-rose-600">
+                    Product is required.
+                  </p>
+                </div>
+                <div class="flex items-end gap-2">
+                  <div class="flex-1 sm:w-28 sm:flex-initial">
+                    <label class="block text-xs font-medium text-slate-500">Quantity</label>
+                    <input type="number" min="1" formControlName="quantity"
+                      class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+                    <p *ngIf="isItemFieldInvalid(item, 'quantity')" class="mt-1 text-xs text-rose-600">
+                      Quantity must be at least 1.
+                    </p>
+                  </div>
+                  <button type="button" (click)="removeItem(i)"
+                    class="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150">
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              <p *ngIf="items.length === 0" class="text-sm text-slate-400">
+                No items yet — add at least one product.
+              </p>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-4 py-3 sm:px-6 sm:py-4">
+        <button type="button" (click)="showCreateModal = false"
+          class="rounded-lg border border-slate-300 px-2.5 py-1 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150">
+          Cancel
+        </button>
+        <button type="button" [disabled]="isSaving || items.length === 0" (click)="createOrder()"
+          class="rounded-lg bg-blue-600 px-2.5 py-1 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
+          {{ isSaving ? 'Creating…' : 'Create Order' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details Modal -->
+  <div *ngIf="showDetailsModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-2.5 sm:p-4 backdrop-blur-sm">
+    <div class="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+      role="dialog" aria-modal="true"
+      [attr.aria-label]="selectedOrder ? 'Order ' + shortId(selectedOrder.id) : 'Order Details'">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6 sm:py-4">
+        <h2 class="text-base sm:text-lg font-semibold text-slate-900">{{ selectedOrder ? 'Order #' +
+          shortId(selectedOrder.id) : 'Order Details' }}</h2>
+        <button type="button" (click)="showDetailsModal = false"
+          class="rounded-lg p-1 text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+            aria-hidden="true">
+            <path fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-5">
+        <div *ngIf="selectedOrder" class="space-y-4 sm:space-y-5">
+          <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 text-xs sm:text-sm">
+            <div>
+              <p class="text-[11px] sm:text-xs text-slate-400">Customer</p>
+              <p class="font-medium text-slate-900">{{ customerName(selectedOrder.customer_id) }}</p>
+            </div>
+            <div>
+              <p class="text-[11px] sm:text-xs text-slate-400">Status</p>
+              <span class="mt-1 inline-block" [ngClass]="statusClass(selectedOrder.status)">{{ selectedOrder.status
+                }}</span>
+            </div>
+            <div>
+              <p class="text-[11px] sm:text-xs text-slate-400">Order Date</p>
+              <p class="font-medium text-slate-900">{{ selectedOrder.order_date | date:'medium' }}</p>
+            </div>
+            <div>
+              <p class="text-[11px] sm:text-xs text-slate-400">Total</p>
+              <p class="font-semibold text-slate-900">{{ totalInr(selectedOrder) }}</p>
+            </div>
+            <div>
+              <p class="text-[11px] sm:text-xs text-slate-400">Initial Forecast ETA</p>
+              <p class="font-medium text-slate-900">{{ (selectedOrder.predicted_delivery_date | date:'mediumDate') ||
+                'Not predicted yet' }}</p>
+            </div>
+            <div>
+              <p class="text-[11px] sm:text-xs text-slate-400">Actual Delivery Date</p>
+              <p class="font-medium"
+                [ngClass]="selectedOrder.actual_delivery_date ? 'text-emerald-700' : 'text-slate-400'">
+                {{ (selectedOrder.actual_delivery_date | date:'mediumDate') || 'Not delivered yet' }}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p class="mb-2 text-xs sm:text-sm font-medium text-slate-700">Order Items ({{ selectedOrder.items.length }})
+            </p>
+            <div class="max-h-60 overflow-y-auto rounded-xl border border-slate-200">
+              <table class="min-w-full w-full divide-y divide-slate-200 text-xs sm:text-sm">
+                <thead class="sticky top-0 z-10 bg-slate-50 text-xs text-slate-500 shadow-sm">
+                  <tr>
+                    <th class="px-3.5 py-2.5 text-left font-medium">Product</th>
+                    <th class="px-3.5 py-2.5 text-left font-medium">Stock Status</th>
+                    <th class="px-3.5 py-2.5 text-center font-medium">Order Qty</th>
+                    <th class="px-3.5 py-2.5 text-right font-medium">Unit Price</th>
+                    <th class="px-3.5 py-2.5 text-right font-medium">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr *ngFor="let item of selectedOrder.items" class="hover:bg-slate-50/50 transition-colors">
+                    <td class="px-3.5 py-2.5">
+                      <p class="font-medium text-slate-900">{{ productName(item.product_id) }}</p>
+                      <p *ngIf="getProduct(item.product_id)?.sku" class="text-xs text-slate-400">
+                        SKU: {{ getProduct(item.product_id)?.sku }}
+                      </p>
+                    </td>
+                    <td class="px-3.5 py-2.5">
+                      <div class="flex flex-col items-start gap-1">
+                        <span [ngClass]="productStockClass(item.product_id, item.quantity)">
+                          {{ productStockStatusLabel(item.product_id, item.quantity) }}
+                        </span>
+                        <span class="text-xs font-medium text-slate-500">
+                          {{ productStockQtyText(item.product_id) }}
+                        </span>
+                        <span *ngIf="isShortage(item)" class="text-[11px] font-medium text-rose-600">
+                          ⚠️ Shortage (needs {{ item.quantity }}, only {{ getProductStockQty(item.product_id) }} in
+                          stock)
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-3.5 py-2.5 text-center font-semibold text-slate-900">{{ item.quantity }}</td>
+                    <td class="px-3.5 py-2.5 text-right text-slate-600">{{ subtotalInr(item.unit_price) }}</td>
+                    <td class="px-3.5 py-2.5 text-right font-semibold text-slate-900">{{ subtotalInr(item.subtotal) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <a *ngIf="selectedOrder && selectedOrder.status !== 'DELIVERED' && !selectedOrder.actual_delivery_date"
+          [routerLink]="['/predictions']" [queryParams]="{ orderId: selectedOrder.id }"
+          (click)="showDetailsModal = false"
+          class="rounded-lg bg-violet-600 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-violet-500">
+          ✦ Forecast Delivery ETA
+        </a>
+        <button type="button" (click)="showDetailsModal = false"
+          class="rounded-lg border border-slate-300 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Transition Modal -->
+  <div *ngIf="showStatusModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div class="flex max-h-[90vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+      role="dialog" aria-modal="true"
+      [attr.aria-label]="selectedOrder ? 'Update Status — ' + shortId(selectedOrder.id) : 'Update Status'">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">{{ selectedOrder ? 'Update Status — ' +
+          shortId(selectedOrder.id) : 'Update Status' }}</h2>
+        <button type="button" (click)="showStatusModal = false"
+          class="rounded-lg p-1 text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+            aria-hidden="true">
+            <path fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div *ngIf="selectedOrder" class="space-y-4">
+          <p class="text-sm text-slate-500">
+            Current status: <span class="font-semibold text-slate-900">{{ selectedOrder.status }}</span>
+          </p>
+
+          <div>
+            <label for="next-status" class="block text-sm font-medium text-slate-700">Transition to</label>
+            <select id="next-status" [(ngModel)]="selectedStatus"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+              <option value="" disabled>Select next status</option>
+              <option *ngFor="let status of nextStatuses" [value]="status">{{ status }}</option>
+            </select>
+          </div>
+
+          <div *ngIf="nextStatuses.length === 0" class="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-500">
+            This order is in a terminal state and can no longer transition.
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <button type="button" (click)="showStatusModal = false"
+          class="rounded-lg border border-slate-300 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150">
+          Cancel
+        </button>
+        <button type="button" [disabled]="isSaving || !selectedStatus" (click)="updateStatus()"
+          class="rounded-lg bg-blue-600 px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
+          {{ isSaving ? 'Updating…' : 'Update Status' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div *ngIf="toastMessage"
+    class="pointer-events-auto fixed bottom-4 right-4 z-[100] w-80 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur"
+    [class]="toastType === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+          : toastType === 'error' ? 'border-rose-200 bg-rose-50 text-rose-800'
+          : 'border-blue-200 bg-blue-50 text-blue-800'" [attr.role]="toastType === 'error' ? 'alert' : 'status'">
+    {{ toastMessage }}
+  </div>
+</div>

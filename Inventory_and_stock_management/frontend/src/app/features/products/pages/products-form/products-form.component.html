@@ -1,0 +1,251 @@
+<main class="mx-auto flex h-full min-h-0 max-w-5xl flex-col gap-3 px-4 sm:px-6">
+
+  <!-- Header -->
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+      {{ editMode ? 'Edit Product' : 'Add Product' }}
+    </h1>
+
+    <button
+      type="button"
+      (click)="cancel()"
+      class="self-start rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm"
+    >
+      Back to list
+    </button>
+  </div>
+
+  <!-- Form -->
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-y-auto">
+
+<form
+  [formGroup]="productForm"
+  (ngSubmit)="onSubmit()"
+  class="grid gap-5 md:grid-cols-2"
+>
+
+  <!-- Product Name -->
+  <div>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Product Name</label>
+
+    <input
+      type="text"
+      formControlName="name"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+    />
+
+    <p
+      *ngIf="productForm.get('name')?.touched && productForm.get('name')?.invalid"
+      class="text-xs text-red-600"
+    >
+      Product name is required.
+    </p>
+  </div>
+
+
+  <!-- SKU -->
+  <div>
+    <label class="mb-2 block text-sm font-medium text-slate-700">SKU</label>
+
+    <input
+      type="text"
+      formControlName="sku"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+    />
+
+    <p
+      *ngIf="productForm.get('sku')?.touched && productForm.get('sku')?.invalid"
+      class="text-xs text-red-600"
+    >
+      SKU is required.
+    </p>
+  </div>
+
+
+  <!-- Category Name -->
+  <div>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Category Name</label>
+
+    <select
+      formControlName="category_name"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+    >
+      <option [ngValue]="null">Select a category name</option>
+
+      <option
+        *ngFor="let category of categories"
+        [ngValue]="category.name"
+      >
+        {{ category.name }}
+      </option>
+    </select>
+
+    <p
+      *ngIf="productForm.get('category_name')?.touched && productForm.get('category_name')?.invalid"
+      class="text-xs text-red-600"
+    >
+      Category name is required.
+    </p>
+  </div>
+
+
+  <!-- Supplier Name -->
+  <div>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Supplier Name</label>
+
+    <select
+      formControlName="supplier_name"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+    >
+      <option [ngValue]="null">Select a supplier name</option>
+
+      <option
+        *ngFor="let supplier of suppliers"
+        [ngValue]="supplier.name"
+      >
+        {{ supplier.name }}
+      </option>
+    </select>
+
+    <p
+      *ngIf="productForm.get('supplier_name')?.touched && productForm.get('supplier_name')?.invalid"
+      class="text-xs text-red-600"
+    >
+      Supplier name is required.
+    </p>
+  </div>
+
+
+  <!-- Price -->
+  <div>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Unit Price</label>
+
+    <input
+      type="number"
+      min="0"
+      step="0.01"
+      formControlName="unit_price"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+    />
+
+    <p
+      *ngIf="productForm.get('unit_price')?.touched && productForm.get('unit_price')?.errors?.['required']"
+      class="text-xs text-red-600"
+    >
+      Price is required.
+    </p>
+
+    <p
+      *ngIf="productForm.get('unit_price')?.touched && productForm.get('unit_price')?.errors?.['min']"
+      class="text-xs text-red-600"
+    >
+      Price cannot be negative.
+    </p>
+  </div>
+
+
+  <!-- Quantity -->
+  <div>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Quantity</label>
+
+    <input
+      type="number"
+      min="0"
+      step="1"
+      formControlName="quantity_in_stock"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+    />
+
+    <p
+      *ngIf="productForm.get('quantity_in_stock')?.touched && productForm.get('quantity_in_stock')?.errors?.['required']"
+      class="text-xs text-red-600"
+    >
+      Quantity is required.
+    </p>
+
+    <p
+      *ngIf="productForm.get('quantity_in_stock')?.touched && productForm.get('quantity_in_stock')?.errors?.['nonNegativeInteger']"
+      class="text-xs text-red-600"
+    >
+      Quantity must be a whole number of 0 or more.
+    </p>
+  </div>
+
+
+  <!-- Reorder Level -->
+  <div>
+    <label class="mb-2 block text-sm font-medium text-slate-700">Reorder Qty.</label>
+
+    <input
+      type="number"
+      min="0"
+      step="1"
+      formControlName="reorder_level"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+    />
+
+    <p
+      *ngIf="productForm.get('reorder_level')?.touched && productForm.get('reorder_level')?.errors?.['required']"
+      class="text-xs text-red-600"
+    >
+      Reorder level is required.
+    </p>
+
+    <p
+      *ngIf="productForm.get('reorder_level')?.touched && productForm.get('reorder_level')?.errors?.['nonNegativeInteger']"
+      class="text-xs text-red-600"
+    >
+      Reorder level must be a whole number of 0 or more.
+    </p>
+  </div>
+
+
+  <!-- Description -->
+  <div class="md:col-span-2">
+    <label class="mb-2 block text-sm font-medium text-slate-700">Description (optional)</label>
+
+    <textarea
+      rows="4"
+      formControlName="description"
+      class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+    ></textarea>
+  </div>
+
+
+  <!-- Error -->
+  <div
+    *ngIf="errorMessage"
+    class="md:col-span-2 text-sm text-red-600"
+  >
+    {{ errorMessage }}
+  </div>
+
+
+  <!-- Buttons -->
+  <div class="md:col-span-2 flex flex-col gap-2.5 sm:flex-row sm:justify-end">
+
+    <button
+      type="button"
+      (click)="cancel()"
+      [disabled]="submitting"
+      class="rounded-lg sm:rounded-xl border border-slate-300 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      Cancel
+    </button>
+
+    <button
+      type="submit"
+      [disabled]="submitting"
+      class="rounded-lg sm:rounded-xl bg-blue-600 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {{ submitting ? 'Saving...' : (editMode ? 'Update Product' : 'Save Product') }}
+    </button>
+
+  </div>
+
+</form>
+ 
+  </section>
+
+</main>

@@ -1,0 +1,40 @@
+# Compiled output & Node
+dist/
+tmp/
+out-tsc/
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python & Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+
+# IDEs & Editors
+.idea/
+.project
+.classpath
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Angular cache & logs
+.angular/
+.sass-cache/
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db

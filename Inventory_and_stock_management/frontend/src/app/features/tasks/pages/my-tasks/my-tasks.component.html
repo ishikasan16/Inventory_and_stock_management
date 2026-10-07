@@ -1,0 +1,178 @@
+<div class="mx-auto flex h-full max-w-5xl flex-col gap-1.5 sm:gap-2 px-1 sm:px-3 py-1">
+  <div class="flex items-center justify-between gap-2">
+    <div>
+      <h1 class="text-base sm:text-xl font-semibold text-slate-900">My Tasks</h1>
+      <p class="text-xs text-slate-500">Work assigned to you by your manager</p>
+    </div>
+  </div>
+
+  <p
+    *ngIf="errorMessage"
+    class="rounded-xl bg-rose-50 px-3 py-2 text-xs sm:text-sm text-rose-600 ring-1 ring-rose-200"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </p>
+
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 px-3 py-1.5 sm:px-4 sm:py-2">
+      <h2 class="text-sm sm:text-base font-semibold text-slate-900">Task List</h2>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="px-6 py-16 text-center text-sm text-slate-400">
+      Loading tasks…
+    </div>
+
+    <!-- Empty -->
+    <div
+      *ngIf="!isLoading && tasks.length === 0 && !errorMessage"
+      class="px-6 py-16 text-center text-sm text-slate-400"
+    >
+      No tasks assigned yet.
+    </div>
+
+    <!-- Mobile cards -->
+    <div *ngIf="!isLoading && tasks.length > 0" class="min-h-0 flex-1 overflow-y-auto md:hidden scrollbar-thin">
+      <div class="divide-y divide-slate-100 p-3 space-y-1">
+        <div
+          *ngFor="let task of tasks"
+          class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-medium text-slate-900">{{ task.title }}</p>
+              <p *ngIf="task.description" class="mt-1 line-clamp-2 text-sm text-slate-500">{{ task.description }}</p>
+            </div>
+          </div>
+
+          <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span [ngClass]="priorityClass(task.priority)">{{ task.priority }}</span>
+            <span [ngClass]="statusClass(task.status)">{{ statusLabel(task.status) }}</span>
+            <span *ngIf="task.due_date" class="text-slate-400">Due {{ task.due_date | date:'mediumDate' }}</span>
+            <span class="text-slate-400">Target: {{ targetLabel(task.target_type) }}</span>
+          </div>
+
+          <div class="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2.5">
+            <a
+              *ngIf="recordTarget(task)"
+              [routerLink]="recordTarget(task)"
+              [queryParams]="recordTargetParams(task)"
+              class="rounded-lg px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+            >
+              Open record
+            </a>
+            <span *ngIf="!recordTarget(task)" class="text-xs text-slate-400">—</span>
+
+            <button
+              *ngIf="canAdvance(task.status)"
+              type="button"
+              (click)="updateStatus(task)"
+              [disabled]="updatingId === task.id"
+              class="rounded-lg px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {{ updatingId === task.id ? 'Saving…' : statusLabel(nextStatus(task.status)) }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop table -->
+    <div *ngIf="!isLoading && tasks.length > 0" class="hidden min-h-0 flex-1 overflow-y-auto md:block">
+      <table class="min-w-full divide-y divide-slate-200 text-center">
+        <thead class="sticky top-0 z-10 bg-slate-50 text-xs sm:text-sm text-slate-600 shadow-sm">
+          <tr>
+            <th class="px-3 py-2 font-medium">Title</th>
+            <th class="px-3 py-2 font-medium">Description</th>
+            <th class="px-3 py-2 font-medium">Priority</th>
+            <th class="px-3 py-2 font-medium">Due Date</th>
+            <th class="px-3 py-2 font-medium">Status</th>
+            <th class="px-3 py-2 font-medium">Linked Record</th>
+            <th class="px-3 py-2 font-medium">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white text-xs sm:text-sm text-slate-700">
+          <tr *ngFor="let task of tasks" class="transition-colors duration-150 hover:bg-slate-50/80">
+            <td class="px-3 py-2 font-medium text-slate-900">{{ task.title }}</td>
+            <td class="max-w-[220px] px-3 py-2 text-slate-500">
+              <span class="line-clamp-1">{{ task.description || '—' }}</span>
+            </td>
+            <td class="px-3 py-2">
+              <span [ngClass]="priorityClass(task.priority)">{{ task.priority }}</span>
+            </td>
+            <td class="px-3 py-2">{{ task.due_date ? (task.due_date | date:'mediumDate') : '—' }}</td>
+            <td class="px-3 py-2">
+              <span [ngClass]="statusClass(task.status)" class="inline-block whitespace-nowrap">{{ statusLabel(task.status) }}</span>
+            </td>
+            <td class="px-3 py-2">
+              <a
+                *ngIf="recordTarget(task)"
+                [routerLink]="recordTarget(task)"
+                [queryParams]="recordTargetParams(task)"
+                class="text-xs font-medium text-blue-600 hover:text-blue-500"
+              >
+                {{ targetLabel(task.target_type) }}
+              </a>
+              <span *ngIf="!recordTarget(task)" class="text-xs text-slate-400">—</span>
+            </td>
+            <td class="px-3 py-2">
+              <button
+                *ngIf="canAdvance(task.status)"
+                type="button"
+                (click)="updateStatus(task)"
+                [disabled]="updatingId === task.id"
+                class="rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {{ updatingId === task.id ? 'Saving…' : statusLabel(nextStatus(task.status)) }}
+              </button>
+              <span *ngIf="!canAdvance(task.status)" class="text-xs text-emerald-600">Done</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && total > 0" class="border-t border-slate-200 px-3 py-1.5 sm:px-4 sm:py-1.5">
+      <div class="flex items-center justify-between gap-2 text-xs">
+        <div class="text-xs text-slate-500">
+          Showing
+          <span class="font-medium text-slate-600">{{ startItem }}</span>
+          –
+          <span class="font-medium text-slate-600">{{ endItem }}</span>
+          of
+          <span class="font-medium text-slate-600">{{ total }}</span>
+          tasks
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            (click)="goToPage(currentPage - 1)"
+            [disabled]="currentPage <= 1"
+            class="rounded-lg border border-slate-300 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+
+          <span class="px-1 text-xs text-slate-500">
+            Page
+            <span class="font-medium text-slate-600">{{ currentPage }}</span>
+            of
+            <span class="font-medium text-slate-600">{{ totalPages }}</span>
+          </span>
+
+          <button
+            type="button"
+            (click)="goToPage(currentPage + 1)"
+            [disabled]="currentPage >= totalPages"
+            class="rounded-lg border border-slate-300 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

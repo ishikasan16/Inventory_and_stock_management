@@ -1,0 +1,200 @@
+<div class="mx-auto flex h-full max-w-6xl flex-col gap-1.5 sm:gap-2 px-1 sm:px-3 py-1">
+  <div class="flex items-center justify-between gap-2">
+    <div>
+      <h1 class="text-base sm:text-xl font-semibold text-slate-900">Manage Tasks</h1>
+      <p class="text-xs text-slate-500 hidden sm:block">
+        {{ isSuper ? 'All tasks in the system' : 'Tasks you assigned to your team' }}
+      </p>
+    </div>
+
+    <button type="button" (click)="openCreate()"
+      class="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-2.5 py-1 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+      + Assign Task
+    </button>
+  </div>
+
+  <p *ngIf="errorMessage" class="rounded-xl bg-rose-50 px-3 py-2 text-xs sm:text-sm text-rose-600 ring-1 ring-rose-200"
+    role="alert">
+    {{ errorMessage }}
+  </p>
+
+  <p *ngIf="successMessage" class="rounded-xl bg-emerald-50 px-3 py-2 text-xs sm:text-sm text-emerald-600 ring-1 ring-emerald-200"
+    role="status">
+    {{ successMessage }}
+  </p>
+
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 px-3 py-1.5 sm:px-4 sm:py-2">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-sm sm:text-base font-semibold text-slate-900">Assigned Tasks</h2>
+
+        <!-- Status and All Assignee in ONE line -->
+        <div class="flex items-center gap-2">
+          <select [value]="filterStatus" (change)="setStatusFilter($any($event.target).value)"
+            aria-label="Filter by status"
+            class="rounded-xl border border-slate-300 bg-slate-50 px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200">
+            <option value="">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETED">Completed</option>
+          </select>
+
+          <select [value]="filterAssignee" (change)="setAssigneeFilter($any($event.target).value)"
+            aria-label="Filter by assignee"
+            class="rounded-xl border border-slate-300 bg-slate-50 px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200">
+            <option value="">All assignees</option>
+            <option *ngFor="let member of assignees" [value]="member.id">{{ member.username || member.email }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="px-6 py-16 text-center text-sm text-slate-400">
+      Loading tasks…
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!isLoading && filteredTasks.length === 0 && !errorMessage"
+      class="px-6 py-16 text-center text-sm text-slate-400">
+      No tasks found.
+    </div>
+
+    <!-- Mobile Card View -->
+    <div *ngIf="!isLoading && filteredTasks.length > 0"
+      class="min-h-0 flex-1 overflow-y-auto md:hidden scrollbar-thin p-3 space-y-3">
+      <div *ngFor="let task of filteredTasks"
+        class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <h3 class="font-semibold text-slate-900 text-sm leading-snug">{{ task.title }}</h3>
+            <p class="mt-0.5 text-xs text-slate-500">
+              <span class="text-slate-400">To:</span> <strong class="font-medium text-slate-700">{{ assigneeName(task)
+                }}</strong>
+              <span *ngIf="isSuper" class="ml-1.5"><span class="text-slate-400">By:</span> {{ assignerName(task)
+                }}</span>
+            </p>
+          </div>
+          <span [ngClass]="priorityClass(task.priority)" class="shrink-0 text-xs">{{ task.priority }}</span>
+        </div>
+
+        <div class="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+          <span [ngClass]="statusClass(task.status)">{{ statusLabel(task.status) }}</span>
+          <span *ngIf="task.target_type" class="rounded-md bg-slate-100 px-2 py-0.5 text-slate-600 font-medium">
+            {{ targetLabel(task.target_type) }}
+          </span>
+          <span class="text-slate-400 ml-auto">
+            Due: {{ task.due_date ? (task.due_date | date:'mediumDate') : '—' }}
+          </span>
+        </div>
+
+        <div class="mt-2.5 flex items-center justify-end gap-1.5 border-t border-slate-100 pt-2.5">
+          <button type="button" (click)="openEdit(task)"
+            class="flex-1 rounded-lg px-2.5 py-1 text-center text-xs font-medium text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 transition-colors duration-150">
+            Edit
+          </button>
+          <button type="button" (click)="deleteTask(task)" [disabled]="deletingId === task.id"
+            class="flex-1 rounded-lg px-2.5 py-1 text-center text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40">
+            {{ deletingId === task.id ? 'Deleting…' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop table -->
+    <div *ngIf="!isLoading && filteredTasks.length > 0" class="hidden min-h-0 flex-1 overflow-y-auto md:block">
+      <table class="min-w-full divide-y divide-slate-200 text-center">
+        <thead class="sticky top-0 z-10 bg-slate-50 text-xs sm:text-sm text-slate-600 shadow-sm">
+          <tr>
+            <th class="px-3 py-2 font-medium">Title</th>
+            <th class="px-3 py-2 font-medium">Assignee</th>
+            <th *ngIf="isSuper" class="px-3 py-2 font-medium">Assigned By</th>
+            <th class="px-3 py-2 font-medium">Priority</th>
+            <th class="px-3 py-2 font-medium">Status</th>
+            <th class="px-3 py-2 font-medium">Due Date</th>
+            <th class="px-3 py-2 font-medium">Linked Record</th>
+            <th class="px-3 py-2 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white text-xs sm:text-sm text-slate-700">
+          <tr *ngFor="let task of filteredTasks" class="transition-colors duration-150 hover:bg-slate-50/80">
+            <td class="px-3 py-2 font-medium text-slate-900">{{ task.title }}</td>
+            <td class="px-3 py-2">{{ assigneeName(task) }}</td>
+            <td *ngIf="isSuper" class="px-3 py-2">{{ assignerName(task) }}</td>
+            <td class="px-3 py-2">
+              <span [ngClass]="priorityClass(task.priority)">{{ task.priority }}</span>
+            </td>
+            <td class="px-3 py-2">
+              <span [ngClass]="statusClass(task.status)" class="inline-block whitespace-nowrap">{{ statusLabel(task.status) }}</span>
+            </td>
+            <td class="px-3 py-2 text-slate-600">{{ task.due_date ? (task.due_date | date:'mediumDate') : '—' }}</td>
+            <td class="px-3 py-2 text-xs">
+              <span class="rounded-md bg-slate-100 px-2 py-0.5 text-slate-600 font-medium">
+                {{ targetLabel(task.target_type) }}
+              </span>
+            </td>
+            <td class="px-3 py-2">
+              <div class="flex items-center justify-center gap-1.5">
+                <button type="button" (click)="openEdit(task)"
+                  class="rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 text-center text-xs font-medium text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 transition-colors duration-150">
+                  Edit
+                </button>
+                <button type="button" (click)="deleteTask(task)" [disabled]="deletingId === task.id"
+                  class="rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40">
+                  {{ deletingId === task.id ? 'Deleting…' : 'Delete' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && shownTotal > 0" class="border-t border-slate-200 px-3 py-1.5 sm:px-4 sm:py-1.5">
+      <div class="flex items-center justify-between gap-2 text-xs">
+        <div class="text-xs text-slate-500">
+          Showing
+          <span class="font-medium text-slate-600">{{ startItem }}</span>
+          –
+          <span class="font-medium text-slate-600">{{ endItem }}</span>
+          of
+          <span class="font-medium text-slate-600">{{ shownTotal }}</span>
+          tasks
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button type="button" (click)="goToPage(shownPage - 1)" [disabled]="shownPage <= 1"
+            class="rounded-lg border border-slate-300 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
+            Previous
+          </button>
+
+          <span class="px-1 text-xs text-slate-500">
+            Page
+            <span class="font-medium text-slate-600">{{ shownPage }}</span>
+            of
+            <span class="font-medium text-slate-600">{{ shownTotalPages }}</span>
+          </span>
+
+          <button type="button" (click)="goToPage(shownPage + 1)" [disabled]="shownPage >= shownTotalPages"
+            class="rounded-lg border border-slate-300 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Task form (create/edit) -->
+  <div *ngIf="showForm"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+      <h2 class="text-lg font-semibold text-slate-900">
+        {{ editingTask ? 'Edit Task' : 'Assign Task' }}
+      </h2>
+
+      <app-task-form [task]="editingTask" [assignees]="assignees" [targetTypes]="targetTypes" (saved)="onSaved()"
+        (cancelled)="closeForm()"></app-task-form>
+    </div>
+  </div>
+</div>

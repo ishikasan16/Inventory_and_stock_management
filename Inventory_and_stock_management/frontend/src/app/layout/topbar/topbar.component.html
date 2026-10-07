@@ -1,0 +1,86 @@
+<header class="relative z-30 flex min-h-12 sm:min-h-14 flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 bg-white/80 px-3 py-1.5 sm:px-5 sm:py-2 shadow-sm backdrop-blur-sm">
+  <div class="flex items-center gap-2 sm:gap-2.5">
+    <button
+      type="button"
+      class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 md:hidden sm:h-9 sm:w-9"
+      aria-label="Toggle navigation"
+      (click)="onToggleSidebar()"
+    >
+      <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true">
+        <path d="M3 5h14v2H3V5zm0 6h14v2H3v-2zm0 6h14v2H3v-2z" />
+      </svg>
+    </button>
+
+    <div class="min-w-0">
+      <h1 class="truncate text-sm font-semibold text-slate-900 sm:text-base">Welcome back, {{ userName }}</h1>
+    </div>
+  </div>
+
+  <div class="relative z-30 order-3 w-full md:order-2 md:w-auto md:min-w-72 lg:min-w-96">
+    <label for="inventory-search" class="sr-only">Search inventory</label>
+    <div class="relative">
+      <span class="pointer-events-none absolute inset-y-0 left-2.5 z-10 flex items-center text-slate-400 sm:left-3" aria-hidden="true">⌕</span>
+      <input
+        #searchInput
+        id="inventory-search"
+        type="search"
+        placeholder="Search products, orders, customers…"
+        value="{{ searchQuery }}"
+        (input)="onSearchInput(searchInput.value)"
+        (keydown)="onSearchKeydown($event)"
+        (blur)="onBlurSuggestions()"
+        class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-xs text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 focus:shadow-sm sm:py-2.5 sm:pl-9 sm:pr-4 sm:text-sm"
+      />
+
+      <div
+        *ngIf="showSuggestions && suggestions.length > 0"
+        class="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-60 sm:max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-xl"
+      >
+        <button
+          type="button"
+          *ngFor="let suggestion of suggestions; let i = index"
+          (mousedown)="selectSuggestion(suggestion)"
+          [class]="i === selectedSuggestionIndex ? 'flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs sm:text-sm text-slate-900 bg-blue-50' : 'flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs sm:text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-150'"
+        >
+          <span
+            [class]="suggestion.type === 'product'
+              ? 'inline-flex shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-blue-700'
+              : suggestion.type === 'supplier'
+                ? 'inline-flex shrink-0 rounded bg-violet-100 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-violet-700'
+                : suggestion.type === 'category'
+                  ? 'inline-flex shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-emerald-700'
+                  : suggestion.type === 'customer'
+                    ? 'inline-flex shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-amber-700'
+                    : 'inline-flex shrink-0 rounded bg-indigo-100 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-indigo-700'"
+          >
+            {{ suggestion.type }}
+          </span>
+          <span class="min-w-0 flex-1 truncate font-medium sm:font-normal">{{ suggestion.name }}</span>
+          <span class="ml-auto max-w-[45%] shrink truncate text-[10px] sm:text-xs text-slate-400">{{ suggestion.sub }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="order-2 flex items-center gap-3 md:order-3">
+    <div class="flex items-center gap-2 border-l border-slate-200 pl-3">
+      <a routerLink="/dashboard" aria-label="Open admin profile" class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-blue-500/25 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        {{ userName.charAt(0).toUpperCase() }}
+      </a>
+      <span class="hidden text-sm font-medium text-slate-700 sm:inline">{{ userName }}</span>
+      <span
+        *ngIf="currentRole"
+        [ngClass]="{
+          'bg-red-100 text-red-700 ring-red-200': currentRole === 'SUPER_ADMIN',
+          'bg-violet-100 text-violet-700 ring-violet-200': currentRole === 'INVENTORY_MANAGER',
+          'bg-amber-100 text-amber-700 ring-amber-200': currentRole === 'ORDER_MANAGER',
+          'bg-emerald-100 text-emerald-700 ring-emerald-200': currentRole === 'INVENTORY_STAFF',
+          'bg-sky-100 text-sky-700 ring-sky-200': currentRole === 'ORDER_STAFF'
+        }"
+        class="hidden rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 lg:inline"
+      >
+        {{ currentRole }}
+      </span>
+    </div>
+  </div>
+</header>

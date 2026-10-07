@@ -1,0 +1,211 @@
+<main class="mx-auto flex h-full max-w-6xl flex-col gap-4 sm:gap-6 px-2 sm:px-6 py-3 sm:py-4">
+  <div>
+    <h1 class="text-xl sm:text-2xl font-semibold text-slate-900">AI Delivery ETA</h1>
+    <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-500">XGBoost-driven delivery forecasts (model: xgboost-v2)
+    </p>
+  </div>
+
+  <p *ngIf="errorMessage"
+    class="rounded-xl bg-rose-50 px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-rose-600 ring-1 ring-rose-200"
+    role="alert">
+    {{ errorMessage }}
+  </p>
+
+  <section class="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+    <!-- 1-Click Order ETA -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+      <h2 class="text-base sm:text-lg font-semibold text-slate-900">1-Click Order ETA</h2>
+      <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-500">
+        Pick an order and the backend auto-extracts volume, shortage, and supplier lead time.
+      </p>
+
+      <div class="mt-4 space-y-3">
+        <select [(ngModel)]="selectedOrderId"
+          class="block w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+          <option value="" disabled>Select an order</option>
+          <option *ngFor="let order of orders" [value]="order.id">
+            {{ shortId(order.id) }} — {{ customerName(order.customer_id) }} — {{ order.status }}
+          </option>
+        </select>
+
+        <div class="flex justify-center pt-0.5">
+          <button type="button" [disabled]="!selectedOrderId || isLoading" (click)="predictSelectedOrder()"
+            class="inline-flex items-center justify-center rounded-lg bg-violet-600 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
+            {{ isLoading ? 'Calculating…' : '✦ Predict Delivery ETA' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual Simulation -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+      <h2 class="text-base sm:text-lg font-semibold text-slate-900">Manual Simulation</h2>
+      <p class="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-500">What-if scenario with transit and weather parameters.
+      </p>
+
+      <form [formGroup]="manualForm" (ngSubmit)="runManual()" class="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Target order</label>
+          <select formControlName="order_id" (change)="onManualOrderSelect($event)"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+            <option value="" disabled>Select order</option>
+            <option *ngFor="let o of orders" [value]="o.id">
+              {{ shortId(o.id) }} — {{ customerName(o.customer_id) }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Order date</label>
+          <input type="date" formControlName="order_date"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Order quantity</label>
+          <input type="number" min="1" formControlName="order_quantity"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Number of items</label>
+          <input type="number" min="1" formControlName="number_of_items"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Current stock</label>
+          <input type="number" min="0" formControlName="current_stock"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Reorder level</label>
+          <input type="number" min="0" formControlName="reorder_level"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Supplier lead time (d)</label>
+          <input type="number" min="0" formControlName="supplier_lead_time"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Processing time (d)</label>
+          <input type="number" min="0" formControlName="processing_time"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Shipping time (d)</label>
+          <input type="number" min="0" formControlName="shipping_time"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Transit distance (km)</label>
+          <input type="number" min="0" formControlName="distance_km"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Shipping mode</label>
+          <select formControlName="shipping_mode"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+            <option [ngValue]="0">Standard Freight</option>
+            <option [ngValue]="1">Express Priority</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] sm:text-xs font-medium text-slate-500 truncate">Rainy days in transit</label>
+          <input type="number" min="0" formControlName="rainy_days_in_transit"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-200" />
+        </div>
+
+        <div class="col-span-2 flex justify-center pt-1.5 sm:pt-2">
+          <button type="submit" [disabled]="isLoading || manualForm.invalid"
+            class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
+            {{ isLoading ? 'Calculating…' : 'Run Simulation' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Result -->
+  <section *ngIf="result" class="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+    <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="text-base sm:text-lg font-semibold text-slate-900">Prediction Result</h2>
+    </div>
+
+    <!-- Primary KPIs & Environmental Parameters (All in one line) -->
+    <div class="mt-4 sm:mt-5 grid grid-cols-1 gap-2.5 sm:gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+      <div class="group flex flex-col justify-between rounded-xl border-t-4 border-violet-500 bg-white p-3 sm:p-3.5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5">
+        <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-slate-500 truncate">Fulfilment Time</p>
+        <p class="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-bold text-slate-900 leading-tight group-hover:text-violet-600 transition-colors">
+          {{ formatFulfillmentDays(result.predicted_fulfillment_days) }}
+          <span class="text-xs sm:text-sm font-medium text-slate-500">days</span>
+        </p>
+        <p class="mt-0.5 text-[11px] text-slate-400">Business days</p>
+      </div>
+
+      <div class="group flex flex-col justify-between rounded-xl border-t-4 border-blue-500 bg-white p-3 sm:p-3.5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5">
+        <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-slate-500 truncate">Estimated Delivery</p>
+        <p class="mt-1.5 sm:mt-2 text-base sm:text-lg font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{{ formatPredictionDate() }}</p>
+        <p class="mt-0.5 text-[11px] text-slate-400">Target date</p>
+      </div>
+
+      <div class="group flex flex-col justify-between rounded-xl border-t-4 bg-white p-3 sm:p-3.5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5" [ngClass]="{
+        'border-emerald-500': riskAssessment() === 'ON TIME',
+        'border-amber-500': riskAssessment() === 'DELAY RISK'
+      }">
+        <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-slate-500 truncate">Risk Assessment</p>
+        <div>
+          <span class="mt-1.5 sm:mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold transition-transform group-hover:scale-105 duration-200"
+            [ngClass]="{
+            'bg-emerald-100 text-emerald-700': riskAssessment() === 'ON TIME',
+            'bg-amber-100 text-amber-700': riskAssessment() === 'DELAY RISK'
+          }">
+            {{ riskAssessment() }}
+          </span>
+        </div>
+        <p class="mt-0.5 text-[11px] text-slate-400">Delivery status</p>
+      </div>
+
+      <div class="group flex flex-col justify-between rounded-xl border-t-4 bg-white p-3 sm:p-3.5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5" [ngClass]="{
+        'border-emerald-500': stockSufficient(),
+        'border-rose-500': !stockSufficient()
+      }">
+        <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-slate-500 truncate">Warehouse Stock</p>
+        <div>
+          <span class="mt-1.5 sm:mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold transition-transform group-hover:scale-105 duration-200"
+            [ngClass]="{
+            'bg-emerald-100 text-emerald-700': stockSufficient(),
+            'bg-rose-100 text-rose-700': !stockSufficient()
+          }">
+            {{ stockSufficient() ? 'Sufficient' : 'Shortage Expected' }}
+          </span>
+        </div>
+        <p class="mt-0.5 text-[11px] text-slate-400">Inventory check</p>
+      </div>
+
+      <div class="group flex flex-col justify-between rounded-xl border-t-4 border-sky-500 bg-white p-3 sm:p-3.5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:shadow-md hover:ring-slate-300 hover:-translate-y-0.5">
+        <p class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-slate-500 truncate">Transit Weather</p>
+        <p class="mt-1.5 sm:mt-2 text-base sm:text-lg font-bold text-slate-900 flex items-center gap-1.5 leading-tight group-hover:text-sky-600 transition-colors">
+          <span>{{ getWeatherIcon(result.weather_condition) }}</span>
+          <span class="truncate">{{ result.weather_condition || 'Normal' }}</span>
+        </p>
+        <p class="mt-0.5 text-[11px] text-slate-400 truncate">
+          {{ result.rainy_days_in_transit !== null && result.rainy_days_in_transit !== undefined ?
+          (result.rainy_days_in_transit + ' rainy day(s)') : 'No adverse weather' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- AI Logistics Explanation -->
+    <div *ngIf="result.logistics_explanation"
+      class="mt-3 sm:mt-4 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 p-3.5 sm:p-4 shadow-xs">
+      <div class="flex items-start gap-3">
+        <span
+          class="flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white text-[11px] sm:text-xs font-bold shadow-xs">
+          AI
+        </span>
+        <div class="flex-1 min-w-0">
+          <h3 class="text-xs sm:text-sm font-semibold text-slate-900">Logistics & Transit Analysis</h3>
+          <p class="mt-1 text-xs sm:text-sm text-slate-700 leading-relaxed">{{ result.logistics_explanation }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
